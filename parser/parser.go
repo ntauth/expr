@@ -58,6 +58,26 @@ type Tree struct {
 	Source file.Source
 }
 
+type AnyTree struct {
+	Node   *AnyNode
+	Source file.Source
+}
+
+func (t Tree) ToAnyTree() AnyTree {
+	return AnyTree{
+		Node:   NodeToAnyNode(t.Node),
+		Source: t.Source,
+	}
+}
+
+func FromAnyTree(t AnyTree) (*Tree, error) {
+	node, err := AnyNodeToNode(t.Node)
+	if err != nil {
+		return nil, err
+	}
+	return &Tree{Node: node, Source: t.Source}, nil
+}
+
 func Parse(input string) (*Tree, error) {
 	return ParseWithConfig(input, &conf.Config{
 		Disabled: map[string]bool{},

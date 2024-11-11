@@ -12,8 +12,11 @@ import (
 func Env(env any) Nature {
 	if env == nil {
 		return Nature{
-			Type:   reflect.TypeOf(map[string]any{}),
-			Strict: true,
+			NatureBase: NatureBase{
+				TypeName: reflect.TypeOf(map[string]any{}).String(),
+				Strict:   true,
+			},
+			Type: reflect.TypeOf(map[string]any{}),
 		}
 	}
 
@@ -28,14 +31,20 @@ func Env(env any) Nature {
 	switch d.Kind() {
 	case reflect.Struct:
 		return Nature{
-			Type:   v.Type(),
-			Strict: true,
+			NatureBase: NatureBase{
+				TypeName: v.Type().String(),
+				Strict:   true,
+			},
+			Type: v.Type(),
 		}
 
 	case reflect.Map:
 		n := Nature{
-			Type:   v.Type(),
-			Fields: make(map[string]Nature, v.Len()),
+			NatureBase: NatureBase{
+				TypeName: v.Type().String(),
+				Fields:   make(map[string]Nature, v.Len()),
+			},
+			Type: v.Type(),
 		}
 
 		for _, key := range v.MapKeys() {
@@ -52,10 +61,15 @@ func Env(env any) Nature {
 
 			default:
 				if face == nil {
-					n.Fields[key.String()] = Nature{Nil: true}
+					n.Fields[key.String()] = Nature{NatureBase: NatureBase{Nil: true}}
 					continue
 				}
-				n.Fields[key.String()] = Nature{Type: reflect.TypeOf(face)}
+				n.Fields[key.String()] = Nature{
+					NatureBase: NatureBase{
+						TypeName: reflect.TypeOf(face).String(),
+					},
+					Type: reflect.TypeOf(face),
+				}
 			}
 
 		}

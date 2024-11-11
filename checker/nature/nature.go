@@ -11,9 +11,9 @@ var (
 	unknown = Nature{}
 )
 
-type Nature struct {
-	Type            reflect.Type      // Type of the value. If nil, then value is unknown.
-	Func            *builtin.Function // Used to pass function type from callee to CallNode.
+type NatureBase struct {
+	TypeName        string            // Name of the type.
+	FuncName        string            // Name of the function.
 	ArrayOf         *Nature           // Elem nature of array type (usually Type is []any, but ArrayOf can be any nature).
 	PredicateOut    *Nature           // Out nature of predicate.
 	Fields          map[string]Nature // Fields of map type.
@@ -23,6 +23,12 @@ type Nature struct {
 	Method          bool              // If value retrieved from method. Usually used to determine amount of in arguments.
 	MethodIndex     int               // Index of method in type.
 	FieldIndex      []int             // Index of field in type.
+}
+
+type Nature struct {
+	NatureBase
+	Type reflect.Type      // Type of the value. If nil, then value is unknown.
+	Func *builtin.Function // Used to pass function type from callee to CallNode.
 }
 
 func (n Nature) String() string {
@@ -35,6 +41,7 @@ func (n Nature) String() string {
 func (n Nature) Deref() Nature {
 	if n.Type != nil {
 		n.Type = deref.Type(n.Type)
+		n.TypeName = n.Type.String()
 	}
 	return n
 }
@@ -48,7 +55,12 @@ func (n Nature) Kind() reflect.Kind {
 
 func (n Nature) Key() Nature {
 	if n.Kind() == reflect.Map {
-		return Nature{Type: n.Type.Key()}
+		return Nature{
+			NatureBase: NatureBase{
+				TypeName: n.Type.Key().String(),
+			},
+			Type: n.Type.Key(),
+		}
 	}
 	return unknown
 }
@@ -56,17 +68,32 @@ func (n Nature) Key() Nature {
 func (n Nature) Elem() Nature {
 	switch n.Kind() {
 	case reflect.Ptr:
-		return Nature{Type: n.Type.Elem()}
+		return Nature{
+			NatureBase: NatureBase{
+				TypeName: n.Type.Elem().String(),
+			},
+			Type: n.Type.Elem(),
+		}
 	case reflect.Map:
 		if n.DefaultMapValue != nil {
 			return *n.DefaultMapValue
 		}
-		return Nature{Type: n.Type.Elem()}
+		return Nature{
+			NatureBase: NatureBase{
+				TypeName: n.Type.Elem().String(),
+			},
+			Type: n.Type.Elem(),
+		}
 	case reflect.Array, reflect.Slice:
 		if n.ArrayOf != nil {
 			return *n.ArrayOf
 		}
-		return Nature{Type: n.Type.Elem()}
+		return Nature{
+			NatureBase: NatureBase{
+				TypeName: n.Type.Elem().String(),
+			},
+			Type: n.Type.Elem(),
+		}
 	}
 	return unknown
 }
@@ -101,12 +128,20 @@ func (n Nature) MethodByName(name string) (Nature, bool) {
 		// Also, we can not use m.Index here, because it will be
 		// different indexes for different types which implement
 		// the same interface.
-		return Nature{Type: method.Type}, true
+		return Nature{
+			NatureBase: NatureBase{
+				TypeName: method.Type.String(),
+			},
+			Type: method.Type,
+		}, true
 	} else {
 		return Nature{
-			Type:        method.Type,
-			Method:      true,
-			MethodIndex: method.Index,
+			NatureBase: NatureBase{
+				TypeName:    method.Type.String(),
+				Method:      true,
+				MethodIndex: method.Index,
+			},
+			Type: method.Type,
 		}, true
 	}
 }
@@ -122,7 +157,12 @@ func (n Nature) In(i int) Nature {
 	if n.Type == nil {
 		return unknown
 	}
-	return Nature{Type: n.Type.In(i)}
+	return Nature{
+		NatureBase: NatureBase{
+			TypeName: n.Type.In(i).String(),
+		},
+		Type: n.Type.In(i),
+	}
 }
 
 func (n Nature) NumOut() int {
@@ -136,7 +176,12 @@ func (n Nature) Out(i int) Nature {
 	if n.Type == nil {
 		return unknown
 	}
-	return Nature{Type: n.Type.Out(i)}
+	return Nature{
+		NatureBase: NatureBase{
+			TypeName: n.Type.Out(i).String(),
+		},
+		Type: n.Type.Out(i),
+	}
 }
 
 func (n Nature) IsVariadic() bool {
@@ -151,7 +196,13 @@ func (n Nature) FieldByName(name string) (Nature, bool) {
 		return unknown, false
 	}
 	field, ok := fetchField(n.Type, name)
-	return Nature{Type: field.Type, FieldIndex: field.Index}, ok
+	return Nature{
+		NatureBase: NatureBase{
+			TypeName:   field.Type.String(),
+			FieldIndex: field.Index,
+		},
+		Type: field.Type,
+	}, ok
 }
 
 func (n Nature) IsFastMap() bool {
@@ -181,8 +232,11 @@ func (n Nature) Get(name string) (Nature, bool) {
 	case reflect.Struct:
 		if f, ok := fetchField(t, name); ok {
 			return Nature{
-				Type:       f.Type,
-				FieldIndex: f.Index,
+				NatureBase: NatureBase{
+					TypeName:   f.Type.String(),
+					FieldIndex: f.Index,
+				},
+				Type: f.Type,
 			}, true
 		}
 	case reflect.Map:
@@ -203,9 +257,12 @@ func (n Nature) All() map[string]Nature {
 	for i := 0; i < n.Type.NumMethod(); i++ {
 		method := n.Type.Method(i)
 		table[method.Name] = Nature{
-			Type:        method.Type,
-			Method:      true,
-			MethodIndex: method.Index,
+			NatureBase: NatureBase{
+				TypeName:    method.Type.String(),
+				Method:      true,
+				MethodIndex: method.Index,
+			},
+			Type: method.Type,
 		}
 	}
 

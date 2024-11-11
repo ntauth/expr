@@ -13,6 +13,7 @@ import (
 	"github.com/expr-lang/expr/conf"
 	"github.com/expr-lang/expr/file"
 	"github.com/expr-lang/expr/optimizer"
+	"github.com/expr-lang/expr/parser"
 	"github.com/expr-lang/expr/patcher"
 	"github.com/expr-lang/expr/vm"
 )
@@ -206,6 +207,41 @@ func Compile(input string, ops ...Option) (*vm.Program, error) {
 	config.Check()
 
 	tree, err := checker.ParseCheck(input, config)
+	if err != nil {
+		return nil, err
+	}
+
+	if config.Optimize {
+		err = optimizer.Optimize(&tree.Node, config)
+		if err != nil {
+			var fileError *file.Error
+			if errors.As(err, &fileError) {
+				return nil, fileError.Bind(tree.Source)
+			}
+			return nil, err
+		}
+	}
+
+	program, err := compiler.Compile(tree, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return program, nil
+}
+
+// CompileTree parses and compiles given AST to bytecode program.
+func CompileTree(tree *parser.Tree, ops ...Option) (*vm.Program, error) {
+	config := conf.CreateNew()
+	for _, op := range ops {
+		op(config)
+	}
+	for name := range config.Disabled {
+		delete(config.Builtins, name)
+	}
+	config.Check()
+
+	_, err := checker.CheckTree(tree, config)
 	if err != nil {
 		return nil, err
 	}

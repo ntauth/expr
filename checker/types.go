@@ -9,15 +9,15 @@ import (
 
 var (
 	unknown        = Nature{}
-	nilNature      = Nature{Nil: true}
-	boolNature     = Nature{Type: reflect.TypeOf(true)}
-	integerNature  = Nature{Type: reflect.TypeOf(0)}
-	floatNature    = Nature{Type: reflect.TypeOf(float64(0))}
-	stringNature   = Nature{Type: reflect.TypeOf("")}
-	arrayNature    = Nature{Type: reflect.TypeOf([]any{})}
-	mapNature      = Nature{Type: reflect.TypeOf(map[string]any{})}
-	timeNature     = Nature{Type: reflect.TypeOf(time.Time{})}
-	durationNature = Nature{Type: reflect.TypeOf(time.Duration(0))}
+	nilNature      = Nature{NatureBase: NatureBase{Nil: true}}
+	boolNature     = Nature{NatureBase: NatureBase{TypeName: reflect.TypeOf(true).String()}, Type: reflect.TypeOf(true)}
+	integerNature  = Nature{NatureBase: NatureBase{TypeName: reflect.TypeOf(0).String()}, Type: reflect.TypeOf(0)}
+	floatNature    = Nature{NatureBase: NatureBase{TypeName: reflect.TypeOf(float64(0)).String()}, Type: reflect.TypeOf(float64(0))}
+	stringNature   = Nature{NatureBase: NatureBase{TypeName: reflect.TypeOf("").String()}, Type: reflect.TypeOf("")}
+	arrayNature    = Nature{NatureBase: NatureBase{TypeName: reflect.TypeOf([]any{}).String()}, Type: reflect.TypeOf([]any{})}
+	mapNature      = Nature{NatureBase: NatureBase{TypeName: reflect.TypeOf(map[string]any{}).String()}, Type: reflect.TypeOf(map[string]any{})}
+	timeNature     = Nature{NatureBase: NatureBase{TypeName: reflect.TypeOf(time.Time{}).String()}, Type: reflect.TypeOf(time.Time{})}
+	durationNature = Nature{NatureBase: NatureBase{TypeName: reflect.TypeOf(time.Duration(0)).String()}, Type: reflect.TypeOf(time.Duration(0))}
 )
 
 var (
@@ -29,8 +29,11 @@ var (
 
 func arrayOf(nt Nature) Nature {
 	return Nature{
-		Type:    arrayType,
-		ArrayOf: &nt,
+		NatureBase: NatureBase{
+			TypeName: reflect.TypeOf([]any{}).String(),
+			ArrayOf:  &nt,
+		},
+		Type: arrayType,
 	}
 }
 

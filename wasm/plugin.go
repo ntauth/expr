@@ -4,31 +4,148 @@ import (
 	"encoding/json"
 
 	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/ast"
+	"github.com/expr-lang/expr/file"
+	"github.com/expr-lang/expr/parser"
+	"github.com/expr-lang/expr/wasm/types"
 	pdk "github.com/extism/go-pdk"
 )
 
-//export test_run
-func test_run() int32 {
-	pdk.Log(pdk.LogInfo, "test_run")
-	return 1
+//export compile
+func compile() int32 {
+	exprInput := pdk.InputString()
+	program, err := expr.Compile(exprInput, expr.Optimize(false))
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	anyTree := program.Tree.ToAnyTree()
+	result := types.CompileResult{
+		Program: program,
+		AnyTree: &anyTree,
+	}
+
+	resultJson, err := json.Marshal(result)
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	mem := pdk.AllocateString(string(resultJson))
+
+	// zero-copy output to host
+	pdk.OutputMemory(mem)
+
+	return 0
 }
 
-//export compile
-func compile() string {
-	exprInput := pdk.InputString()
-	program, err := expr.Compile(exprInput)
+//export compileTree
+func compileTree() int32 {
+	anyTreeInput := pdk.InputString()
+
+	var anyTree parser.AnyTree
+	err := json.Unmarshal([]byte(anyTreeInput), &anyTree)
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
-		return ""
+		return -1
 	}
 
-	programJson, err := json.Marshal(program)
+	tree, err := parser.FromAnyTree(anyTree)
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
-		return ""
+		return -1
 	}
 
-	return string(programJson)
+	program, err := expr.CompileTree(tree, expr.Optimize(false))
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	anyTree = program.Tree.ToAnyTree()
+	result := types.CompileResult{
+		Program: program,
+		AnyTree: &anyTree,
+	}
+
+	resultJson, err := json.Marshal(result)
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	mem := pdk.AllocateString(string(resultJson))
+
+	// zero-copy output to host
+	pdk.OutputMemory(mem)
+
+	return 0
+}
+
+type patcher struct {
+	patchLoc  file.Location
+	patchNode ast.Node
+}
+
+func (v *patcher) Visit(node *ast.Node) {
+	if (*node).Location().From == v.patchLoc.From || (*node).Location().To == v.patchLoc.To {
+		ast.Patch(node, v.patchNode)
+	}
+}
+
+//export patch
+func patch() int32 {
+	patchRequestInput := pdk.InputString()
+	var patchRequest types.PatchRequest
+	err := json.Unmarshal([]byte(patchRequestInput), &patchRequest)
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	tree, err := parser.FromAnyTree(*patchRequest.AnyTree)
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	patchTree, err := parser.FromAnyTree(*patchRequest.PatchAnyTree)
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	// Patch
+	patchedProgram, err := expr.CompileTree(
+		tree,
+		expr.Patch(&patcher{
+			patchLoc:  patchRequest.Loc,
+			patchNode: patchTree.Node,
+		}),
+		expr.Optimize(false),
+	)
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	anyTree := patchedProgram.Tree.ToAnyTree()
+	result := types.PatchResult{
+		Program: patchedProgram,
+		AnyTree: &anyTree,
+	}
+	resultJson, err := json.Marshal(result)
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	mem := pdk.AllocateString(string(resultJson))
+	// zero-copy output to host
+	pdk.OutputMemory(mem)
+
+	return 0
 }
 
 func main() {}
