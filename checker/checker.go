@@ -50,6 +50,39 @@ func ParseCheck(input string, config *conf.Config) (*parser.Tree, error) {
 	return tree, nil
 }
 
+// CheckTree checks types of the expression tree. Also, it applies all
+// provided patchers. It returns type of the expression and error if any.
+// If config is nil, then default configuration will be used.
+func CheckTree(tree *parser.Tree, config *conf.Config) (reflect.Type, error) {
+	if len(config.Visitors) > 0 {
+		for i := 0; i < 1000; i++ {
+			more := false
+			for _, v := range config.Visitors {
+				// We need to perform types check, because some visitors may rely on
+				// types information available in the tree.
+				_, _ = Check(tree, config)
+
+				ast.Walk(&tree.Node, v)
+
+				if v, ok := v.(interface {
+					ShouldRepeat() bool
+				}); ok {
+					more = more || v.ShouldRepeat()
+				}
+			}
+			if !more {
+				break
+			}
+		}
+	}
+	ty, err := Check(tree, config)
+	if err != nil {
+		return ty, err
+	}
+
+	return ty, nil
+}
+
 // Check checks types of the expression tree. It returns type of the expression
 // and error if any. If config is nil, then default configuration will be used.
 func Check(tree *parser.Tree, config *conf.Config) (reflect.Type, error) {
@@ -205,10 +238,18 @@ func (v *checker) ident(node ast.Node, name string, strict, builtins bool) Natur
 	}
 	if builtins {
 		if fn, ok := v.config.Functions[name]; ok {
-			return Nature{Type: fn.Type(), Func: fn}
+			return Nature{
+				NatureBase: NatureBase{TypeName: fn.Type().String(), FuncName: fn.Name},
+				Type:       fn.Type(),
+				Func:       fn,
+			}
 		}
 		if fn, ok := v.config.Builtins[name]; ok {
-			return Nature{Type: fn.Type(), Func: fn}
+			return Nature{
+				NatureBase: NatureBase{TypeName: fn.Type().String(), FuncName: fn.Name},
+				Type:       fn.Type(),
+				Func:       fn,
+			}
 		}
 	}
 	if v.config.Strict && strict {
@@ -234,7 +275,7 @@ func (v *checker) StringNode(*ast.StringNode) Nature {
 }
 
 func (v *checker) ConstantNode(node *ast.ConstantNode) Nature {
-	return Nature{Type: reflect.TypeOf(node.Value)}
+	return Nature{NatureBase: NatureBase{TypeName: reflect.TypeOf(node.Value).String()}, Type: reflect.TypeOf(node.Value)}
 }
 
 func (v *checker) UnaryNode(node *ast.UnaryNode) Nature {
@@ -506,7 +547,7 @@ func (v *checker) MemberNode(node *ast.MemberNode) Nature {
 		if name, ok := node.Property.(*ast.StringNode); ok {
 			propertyName := name.Value
 			if field, ok := base.FieldByName(propertyName); ok {
-				return Nature{Type: field.Type}
+				return Nature{NatureBase: NatureBase{TypeName: field.Type.String()}, Type: field.Type}
 			}
 			if node.Method {
 				return v.error(node, "type %v has no method %v", base, propertyName)
@@ -782,7 +823,13 @@ func (v *checker) BuiltinNode(node *ast.BuiltinNode) Nature {
 			predicate.NumIn() == 1 && isUnknown(predicate.In(0)) {
 
 			groups := arrayOf(collection.Elem())
-			return Nature{Type: reflect.TypeOf(map[any][]any{}), ArrayOf: &groups}
+			return Nature{
+				NatureBase: NatureBase{
+					TypeName: reflect.TypeOf(map[any][]any{}).String(),
+					ArrayOf:  &groups,
+				},
+				Type: reflect.TypeOf(map[any][]any{}),
+			}
 		}
 		return v.error(node.Arguments[1], "predicate should has one input and one output param")
 
@@ -908,9 +955,17 @@ func (v *checker) checkFunction(f *builtin.Function, node ast.Node, arguments []
 		if err != nil {
 			return v.error(node, "%v", err)
 		}
-		return Nature{Type: t}
+		return Nature{NatureBase: NatureBase{TypeName: t.String()}, Type: t}
 	} else if len(f.Types) == 0 {
-		nt, err := v.checkArguments(f.Name, Nature{Type: f.Type()}, arguments, node)
+		nt, err := v.checkArguments(
+			f.Name,
+			Nature{
+				NatureBase: NatureBase{TypeName: f.Type().String()},
+				Type:       f.Type(),
+			},
+			arguments,
+			node,
+		)
 		if err != nil {
 			if v.err == nil {
 				v.err = err
@@ -922,7 +977,15 @@ func (v *checker) checkFunction(f *builtin.Function, node ast.Node, arguments []
 	}
 	var lastErr *file.Error
 	for _, t := range f.Types {
-		outNature, err := v.checkArguments(f.Name, Nature{Type: t}, arguments, node)
+		outNature, err := v.checkArguments(
+			f.Name,
+			Nature{
+				NatureBase: NatureBase{TypeName: t.String()},
+				Type:       t,
+			},
+			arguments,
+			node,
+		)
 		if err != nil {
 			lastErr = err
 			continue
@@ -1105,8 +1168,11 @@ func (v *checker) PredicateNode(node *ast.PredicateNode) Nature {
 		out = append(out, nt.Type)
 	}
 	return Nature{
-		Type:         reflect.FuncOf([]reflect.Type{anyType}, out, false),
-		PredicateOut: &nt,
+		NatureBase: NatureBase{
+			TypeName:     reflect.FuncOf([]reflect.Type{anyType}, out, false).String(),
+			PredicateOut: &nt,
+		},
+		Type: reflect.FuncOf([]reflect.Type{anyType}, out, false),
 	}
 }
 

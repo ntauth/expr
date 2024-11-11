@@ -12,6 +12,7 @@ import (
 	"github.com/expr-lang/expr/ast"
 	"github.com/expr-lang/expr/builtin"
 	"github.com/expr-lang/expr/file"
+	"github.com/expr-lang/expr/parser"
 	"github.com/expr-lang/expr/vm/runtime"
 )
 
@@ -21,6 +22,7 @@ type Program struct {
 	Arguments []int
 	Constants []any
 
+	Tree      *parser.Tree `json:"-"`
 	source    file.Source
 	node      ast.Node
 	locations []file.Location
@@ -32,8 +34,7 @@ type Program struct {
 
 // NewProgram returns a new Program. It's used by the compiler.
 func NewProgram(
-	source file.Source,
-	node ast.Node,
+	tree *parser.Tree,
 	locations []file.Location,
 	variables int,
 	constants []any,
@@ -44,8 +45,9 @@ func NewProgram(
 	span *Span,
 ) *Program {
 	return &Program{
-		source:    source,
-		node:      node,
+		Tree:      tree,
+		source:    tree.Source,
+		node:      tree.Node,
 		locations: locations,
 		variables: variables,
 		Constants: constants,

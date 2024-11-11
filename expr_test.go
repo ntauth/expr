@@ -20,6 +20,74 @@ import (
 	"github.com/expr-lang/expr/test/mock"
 )
 
+// type ASTNode struct {
+// 	ID         string        `json:"id"`
+// 	Location   file.Location `json:"location"`
+// 	Operator   *string       `json:"operator,omitempty"`
+// 	Value      any           `json:"value,omitempty"`
+// 	Identifier *string       `json:"identifier,omitempty"`
+// 	Children   []ASTNode     `json:"children,omitempty"`
+// }
+
+// type visitor struct {
+// 	nodesByID   map[string]*ASTNode
+// 	Tree        *ASTNode
+// 	lastNodeKey string
+// }
+
+// func NewVisitor() *visitor {
+// 	return &visitor{
+// 		nodesByID: make(map[string]*ASTNode),
+// 	}
+// }
+
+// func (v *visitor) Visit(node *ast.Node) {
+// 	loc := (*node).Location()
+// 	nodeID := fmt.Sprintf("%d:%d", loc.From, loc.To)
+
+// 	var currAstNode *ASTNode
+// 	if cachedAstNode, ok := v.nodesByID[nodeID]; !ok {
+// 		currAstNode = &ASTNode{
+// 			ID:       nodeID,
+// 			Location: loc,
+// 		}
+// 		v.nodesByID[nodeID] = currAstNode
+// 	} else {
+// 		currAstNode = cachedAstNode
+
+// 		switch n := (*node).(type) {
+// 		case *ast.UnaryNode:
+// 			currAstNode.Operator = &n.Operator
+// 		case *ast.BinaryNode:
+// 			currAstNode.Operator = &n.Operator
+// 		case *ast.BoolNode:
+// 			currAstNode.Value = n.Value
+// 		case *ast.IntegerNode:
+// 			currAstNode.Value = n.Value
+// 		case *ast.FloatNode:
+// 			currAstNode.Value = n.Value
+// 		case *ast.StringNode:
+// 			currAstNode.Value = n.Value
+// 		case *ast.ConstantNode:
+// 			currAstNode.Value = n.Value
+// 		case *ast.IdentifierNode:
+// 			currAstNode.Identifier = &n.Value
+// 		}
+
+// 		v.nodesByID[nodeID] = currAstNode
+// 	}
+// }
+
+// func TestMarshal(t *testing.T) {
+// 	prog, err := expr.Compile("true || true", expr.Optimize(false))
+// 	require.NoError(t, err)
+
+// 	ast, err := json.Marshal(prog.Node())
+// 	require.NoError(t, err)
+
+// 	fmt.Println(string(ast))
+// }
+
 func ExampleEval() {
 	output, err := expr.Eval("greet + name", map[string]any{
 		"greet": "Hello, ",

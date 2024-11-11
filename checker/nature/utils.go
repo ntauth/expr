@@ -65,8 +65,11 @@ func StructFields(t reflect.Type) map[string]Nature {
 			}
 
 			table[fieldName(f)] = Nature{
-				Type:       f.Type,
-				FieldIndex: f.Index,
+				NatureBase: NatureBase{
+					TypeName:   f.Type.String(),
+					FieldIndex: f.Index,
+				},
+				Type: f.Type,
 			}
 
 		}

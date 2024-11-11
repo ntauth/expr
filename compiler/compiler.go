@@ -58,8 +58,7 @@ func Compile(tree *parser.Tree, config *conf.Config) (program *Program, err erro
 	}
 
 	program = NewProgram(
-		tree.Source,
-		tree.Node,
+		tree,
 		c.locations,
 		c.variables,
 		c.constants,
