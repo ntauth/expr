@@ -59,8 +59,8 @@ type Tree struct {
 }
 
 type AnyTree struct {
-	Node   *AnyNode
-	Source file.Source
+	Node   *AnyNode    `json:"node"`
+	Source file.Source `json:"source"`
 }
 
 func (t Tree) ToAnyTree() AnyTree {

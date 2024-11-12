@@ -173,38 +173,6 @@ func TestPatcher(t *testing.T) {
 	program, err := expr.Compile("true || true", expr.Optimize(false))
 	require.NoError(t, err)
 
-	// var treeGob bytes.Buffer
-	// gob.Register(&ast.NilNode{})
-	// gob.Register(&ast.IdentifierNode{})
-	// gob.Register(&ast.IntegerNode{})
-	// gob.Register(&ast.FloatNode{})
-	// gob.Register(&ast.BoolNode{})
-	// gob.Register(&ast.StringNode{})
-	// gob.Register(&ast.ConstantNode{})
-	// gob.Register(&ast.UnaryNode{})
-	// gob.Register(&ast.BinaryNode{})
-	// gob.Register(&ast.ChainNode{})
-	// gob.Register(&ast.MemberNode{})
-	// gob.Register(&ast.SliceNode{})
-	// gob.Register(&ast.CallNode{})
-	// gob.Register(&ast.BuiltinNode{})
-	// gob.Register(&ast.PredicateNode{})
-	// gob.Register(&ast.PointerNode{})
-	// gob.Register(&ast.ConditionalNode{})
-	// gob.Register(&ast.VariableDeclaratorNode{})
-	// gob.Register(&ast.ArrayNode{})
-	// gob.Register(&ast.MapNode{})
-	// gob.Register(&ast.PairNode{})
-
-	// enc := gob.NewEncoder(&treeGob)
-	// err = enc.Encode(program.Tree)
-	// require.NoError(t, err)
-
-	// dec := gob.NewDecoder(&treeGob)
-	// var programTree parser.Tree
-	// err = dec.Decode(&programTree)
-	// require.NoError(t, err)
-
 	patchProgram, err := expr.Compile("false", expr.Optimize(false))
 	require.NoError(t, err)
 
