@@ -22,8 +22,8 @@ func compile() int32 {
 
 	anyTree := program.Tree.ToAnyTree()
 	result := types.CompileResult{
-		Program: program,
-		AnyTree: &anyTree,
+		Program:     program,
+		ProgramTree: &anyTree,
 	}
 
 	resultJson, err := json.Marshal(result)
@@ -65,8 +65,8 @@ func compileTree() int32 {
 
 	anyTree = program.Tree.ToAnyTree()
 	result := types.CompileResult{
-		Program: program,
-		AnyTree: &anyTree,
+		Program:     program,
+		ProgramTree: &anyTree,
 	}
 
 	resultJson, err := json.Marshal(result)
@@ -104,13 +104,13 @@ func patch() int32 {
 		return -1
 	}
 
-	tree, err := parser.FromAnyTree(*patchRequest.AnyTree)
+	tree, err := parser.FromAnyTree(*patchRequest.ProgramTree)
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
 		return -1
 	}
 
-	patchTree, err := parser.FromAnyTree(*patchRequest.PatchAnyTree)
+	patchTree, err := parser.FromAnyTree(*patchRequest.PatchProgramTree)
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
 		return -1
@@ -132,9 +132,50 @@ func patch() int32 {
 
 	anyTree := patchedProgram.Tree.ToAnyTree()
 	result := types.PatchResult{
-		Program: patchedProgram,
-		AnyTree: &anyTree,
+		Program:     patchedProgram,
+		ProgramTree: &anyTree,
 	}
+	resultJson, err := json.Marshal(result)
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	mem := pdk.AllocateString(string(resultJson))
+	// zero-copy output to host
+	pdk.OutputMemory(mem)
+
+	return 0
+}
+
+//export run
+func run() int32 {
+	runRequestInput := pdk.InputString()
+	var runRequest types.RunRequest
+	err := json.Unmarshal([]byte(runRequestInput), &runRequest)
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	tree, err := parser.FromAnyTree(*runRequest.ProgramTree)
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	program, err := expr.CompileTree(tree, expr.Optimize(false))
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
+	result, err := expr.Run(program, runRequest.Env)
+	if err != nil {
+		pdk.Log(pdk.LogError, err.Error())
+		return -1
+	}
+
 	resultJson, err := json.Marshal(result)
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
