@@ -393,8 +393,8 @@ func Patch(node *Node, newNode Node) {
 
 // Base is a Base struct for all nodes.
 type Base struct {
-	Loc file.Location
-	Nat *nature.NatureBase
+	Loc file.Location      `json:"loc"`
+	Nat *nature.NatureBase `json:"nat"`
 	nat nature.Nature
 }
 

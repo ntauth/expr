@@ -12,23 +12,23 @@ var (
 )
 
 type NatureBase struct {
-	TypeName        string            // Name of the type.
-	FuncName        string            // Name of the function.
-	ArrayOf         *Nature           // Elem nature of array type (usually Type is []any, but ArrayOf can be any nature).
-	PredicateOut    *Nature           // Out nature of predicate.
-	Fields          map[string]Nature // Fields of map type.
-	DefaultMapValue *Nature           // Default value of map type.
-	Strict          bool              // If map is types.StrictMap.
-	Nil             bool              // If value is nil.
-	Method          bool              // If value retrieved from method. Usually used to determine amount of in arguments.
-	MethodIndex     int               // Index of method in type.
-	FieldIndex      []int             // Index of field in type.
+	TypeName        string            `json:"type_name"`         // Name of the type.
+	FuncName        string            `json:"func_name"`         // Name of the function.
+	ArrayOf         *Nature           `json:"array_of"`          // Elem nature of array type (usually Type is []any, but ArrayOf can be any nature).
+	PredicateOut    *Nature           `json:"predicate_out"`     // Out nature of predicate.
+	Fields          map[string]Nature `json:"fields"`            // Fields of map type.
+	DefaultMapValue *Nature           `json:"default_map_value"` // Default value of map type.
+	Strict          bool              `json:"strict"`            // If map is types.StrictMap.
+	Nil             bool              `json:"nil"`               // If value is nil.
+	Method          bool              `json:"method"`            // If value retrieved from method. Usually used to determine amount of in arguments.
+	MethodIndex     int               `json:"method_index"`      // Index of method in type.
+	FieldIndex      []int             `json:"field_index"`       // Index of field in type.
 }
 
 type Nature struct {
 	NatureBase
-	Type reflect.Type      // Type of the value. If nil, then value is unknown.
-	Func *builtin.Function // Used to pass function type from callee to CallNode.
+	Type reflect.Type      `json:"-"` // Type of the value. If nil, then value is unknown.
+	Func *builtin.Function `json:"-"` // Used to pass function type from callee to CallNode.
 }
 
 func (n Nature) String() string {

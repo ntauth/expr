@@ -11,6 +11,7 @@ import (
 	"github.com/expr-lang/expr/file"
 	"github.com/expr-lang/expr/internal/testify/require"
 	"github.com/expr-lang/expr/parser"
+	"github.com/expr-lang/expr/wasm/types"
 	wasm_types "github.com/expr-lang/expr/wasm/types"
 	extism "github.com/extism/go-sdk"
 )
@@ -102,14 +103,55 @@ func TestPlugin_Patch(t *testing.T) {
 	require.NoError(t, err)
 
 	patchReq := wasm_types.PatchRequest{
-		AnyTree:      compileExprRes.AnyTree,
-		Loc:          file.Location{From: 0, To: 4},
-		PatchAnyTree: compileSubExprRes.AnyTree,
+		ProgramTree:      compileExprRes.ProgramTree,
+		Loc:              file.Location{From: 0, To: 4},
+		PatchProgramTree: compileSubExprRes.ProgramTree,
 	}
 	patchReqJson, err := json.Marshal(patchReq)
 	require.NoError(t, err)
 
 	_, out, err = plugin.Call("patch", patchReqJson)
+	require.NoError(t, err)
+
+	response := string(out)
+	fmt.Println(response)
+}
+
+func TestPlugin_Run(t *testing.T) {
+	manifest := extism.Manifest{
+		Wasm: []extism.Wasm{
+			extism.WasmFile{
+				Path: "../../expr.wasm",
+			},
+		},
+	}
+
+	ctx := context.Background()
+	config := extism.PluginConfig{
+		EnableWasi: true,
+	}
+	plugin, err := extism.NewPlugin(ctx, manifest, config, []extism.HostFunction{})
+	require.NoError(t, err)
+
+	program, err := expr.Compile("x || y", expr.Optimize(false))
+	require.NoError(t, err)
+
+	env := map[string]any{
+		"x": true,
+		"y": false,
+	}
+
+	tree := program.Tree.ToAnyTree()
+	req := types.RunRequest{
+		ProgramTree: &tree,
+		Env:         env,
+	}
+
+	reqJson, err := json.Marshal(req)
+	require.NoError(t, err)
+
+	data := string(reqJson)
+	_, out, err := plugin.Call("run", []byte(data))
 	require.NoError(t, err)
 
 	response := string(out)

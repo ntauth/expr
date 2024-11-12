@@ -18,9 +18,9 @@ import (
 
 // Program represents a compiled expression.
 type Program struct {
-	Bytecode  []Opcode
-	Arguments []int
-	Constants []any
+	Bytecode  []Opcode `json:"bytecode"`
+	Arguments []int    `json:"arguments"`
+	Constants []any    `json:"constants"`
 
 	Tree      *parser.Tree `json:"-"`
 	source    file.Source
