@@ -39,6 +39,15 @@ Here are its standout features:
 ### Go Integration
 * **Seamless with Go**: Integrate Expr into your Go projects without the need to redefine types.
 
+### WebAssembly Integration
+* **Compile to WebAssembly**: Compile Expr expressions to WebAssembly for use in web applications.
+
+See [How to install TinyGo with WASI](https://github.com/expr-lang/expr/tree/master/wasm) for more details on how to install the build tools
+required to compile Expr to WebAssembly. Once installed, you can simply build the plugin as follows:
+```bash
+tinygo build -target wasi -o expr.wasm wasm/plugin.go
+```
+
 ### Static Typing
 * Ensures type correctness and prevents runtime type errors.
   ```go
