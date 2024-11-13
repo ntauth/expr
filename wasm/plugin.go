@@ -5,6 +5,7 @@ import (
 
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/ast"
+	"github.com/expr-lang/expr/conf"
 	"github.com/expr-lang/expr/parser"
 	"github.com/expr-lang/expr/wasm/types"
 	pdk "github.com/extism/go-pdk"
@@ -13,7 +14,7 @@ import (
 //export compile
 func compile() int32 {
 	exprInput := pdk.InputString()
-	program, err := expr.Compile(exprInput)
+	program, err := expr.Compile(exprInput, expr.OptimizeLevel(conf.OptimizationLevel1))
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
 		return -1
@@ -56,7 +57,7 @@ func compileTree() int32 {
 		return -1
 	}
 
-	program, err := expr.CompileTree(tree)
+	program, err := expr.CompileTree(tree, expr.OptimizeLevel(conf.OptimizationLevel1))
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
 		return -1
@@ -162,7 +163,7 @@ func run() int32 {
 		return -1
 	}
 
-	program, err := expr.CompileTree(tree)
+	program, err := expr.CompileTree(tree, expr.OptimizeLevel(conf.OptimizationLevel1))
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
 		return -1
