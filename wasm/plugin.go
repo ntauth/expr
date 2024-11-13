@@ -5,7 +5,6 @@ import (
 
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/ast"
-	"github.com/expr-lang/expr/file"
 	"github.com/expr-lang/expr/parser"
 	"github.com/expr-lang/expr/wasm/types"
 	pdk "github.com/extism/go-pdk"
@@ -84,12 +83,12 @@ func compileTree() int32 {
 }
 
 type patcher struct {
-	patchLoc  file.Location
-	patchNode ast.Node
+	patchNodeID string
+	patchNode   ast.Node
 }
 
 func (v *patcher) Visit(node *ast.Node) {
-	if (*node).Location().From == v.patchLoc.From || (*node).Location().To == v.patchLoc.To {
+	if (*node).ID() == v.patchNodeID {
 		ast.Patch(node, v.patchNode)
 	}
 }
@@ -120,8 +119,8 @@ func patch() int32 {
 	patchedProgram, err := expr.CompileTree(
 		tree,
 		expr.Patch(&patcher{
-			patchLoc:  patchRequest.Loc,
-			patchNode: patchTree.Node,
+			patchNodeID: patchRequest.PatchNodeID,
+			patchNode:   patchTree.Node,
 		}),
 		expr.Optimize(false),
 	)
