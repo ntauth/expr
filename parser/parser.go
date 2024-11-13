@@ -13,6 +13,7 @@ import (
 	. "github.com/expr-lang/expr/parser/lexer"
 	"github.com/expr-lang/expr/parser/operator"
 	"github.com/expr-lang/expr/parser/utils"
+	"github.com/google/uuid"
 )
 
 type arg byte
@@ -213,6 +214,7 @@ func (p *parser) parseExpression(precedence int) Node {
 				Right:    nodeRight,
 			}
 			nodeLeft.SetLocation(opToken.Location)
+			nodeLeft.SetID(uuid.NewString())
 
 			if negate {
 				nodeLeft = &UnaryNode{
@@ -220,6 +222,7 @@ func (p *parser) parseExpression(precedence int) Node {
 					Node:     nodeLeft,
 				}
 				nodeLeft.SetLocation(notToken.Location)
+				nodeLeft.SetID(uuid.NewString())
 			}
 
 			goto next
@@ -252,6 +255,7 @@ func (p *parser) parseVariableDeclaration() Node {
 		Expr:  node,
 	}
 	let.SetLocation(variableName.Location)
+	let.SetID(uuid.NewString())
 	return let
 }
 
@@ -291,6 +295,7 @@ func (p *parser) parsePrimary() Node {
 				Node:     expr,
 			}
 			node.SetLocation(token.Location)
+			node.SetID(uuid.NewString())
 			return p.parsePostfixExpression(node)
 		}
 	}
@@ -314,6 +319,7 @@ func (p *parser) parsePrimary() Node {
 			}
 			node := &PointerNode{Name: name}
 			node.SetLocation(token.Location)
+			node.SetID(uuid.NewString())
 			return p.parsePostfixExpression(node)
 		}
 	} else {
@@ -344,14 +350,17 @@ func (p *parser) parseSecondary() Node {
 		case "true":
 			node := &BoolNode{Value: true}
 			node.SetLocation(token.Location)
+			node.SetID(uuid.NewString())
 			return node
 		case "false":
 			node := &BoolNode{Value: false}
 			node.SetLocation(token.Location)
+			node.SetID(uuid.NewString())
 			return node
 		case "nil":
 			node := &NilNode{}
 			node.SetLocation(token.Location)
+			node.SetID(uuid.NewString())
 			return node
 		default:
 			if p.current.Is(Bracket, "(") {
@@ -359,6 +368,7 @@ func (p *parser) parseSecondary() Node {
 			} else {
 				node = &IdentifierNode{Value: token.Value}
 				node.SetLocation(token.Location)
+				node.SetID(uuid.NewString())
 			}
 		}
 
@@ -401,13 +411,14 @@ func (p *parser) parseSecondary() Node {
 		}
 		if node != nil {
 			node.SetLocation(token.Location)
+			node.SetID(uuid.NewString())
 		}
 		return node
 	case String:
 		p.next()
 		node = &StringNode{Value: token.Value}
 		node.SetLocation(token.Location)
-
+		node.SetID(uuid.NewString())
 	default:
 		if token.Is(Bracket, "[") {
 			node = p.parseArrayExpression(token)
@@ -481,20 +492,24 @@ func (p *parser) parseCall(token Token, arguments []Node, checkOverrides bool) N
 			Arguments: arguments,
 		}
 		node.SetLocation(token.Location)
+		node.SetID(uuid.NewString())
 	} else if _, ok := builtin.Index[token.Value]; ok && !p.config.Disabled[token.Value] && !isOverridden {
 		node = &BuiltinNode{
 			Name:      token.Value,
 			Arguments: p.parseArguments(arguments),
 		}
 		node.SetLocation(token.Location)
+		node.SetID(uuid.NewString())
 	} else {
 		callee := &IdentifierNode{Value: token.Value}
 		callee.SetLocation(token.Location)
+		callee.SetID(uuid.NewString())
 		node = &CallNode{
 			Callee:    callee,
 			Arguments: p.parseArguments(arguments),
 		}
 		node.SetLocation(token.Location)
+		node.SetID(uuid.NewString())
 	}
 	return node
 }
@@ -536,6 +551,7 @@ func (p *parser) parsePredicate() Node {
 		Node: node,
 	}
 	predicateNode.SetLocation(startToken.Location)
+	predicateNode.SetID(uuid.NewString())
 	return predicateNode
 }
 
@@ -558,6 +574,7 @@ end:
 
 	node := &ArrayNode{Nodes: nodes}
 	node.SetLocation(token.Location)
+	node.SetID(uuid.NewString())
 	return node
 }
 
@@ -585,6 +602,7 @@ func (p *parser) parseMapExpression(token Token) Node {
 		if p.current.Is(Number) || p.current.Is(String) || p.current.Is(Identifier) {
 			key = &StringNode{Value: p.current.Value}
 			key.SetLocation(token.Location)
+			key.SetID(uuid.NewString())
 			p.next()
 		} else if p.current.Is(Bracket, "(") {
 			key = p.parseExpression(0)
@@ -597,6 +615,7 @@ func (p *parser) parseMapExpression(token Token) Node {
 		node := p.parseExpression(0)
 		pair := &PairNode{Key: key, Value: node}
 		pair.SetLocation(token.Location)
+		pair.SetID(uuid.NewString())
 		nodes = append(nodes, pair)
 	}
 
@@ -605,6 +624,7 @@ end:
 
 	node := &MapNode{Pairs: nodes}
 	node.SetLocation(token.Location)
+	node.SetID(uuid.NewString())
 	return node
 }
 
@@ -631,7 +651,7 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 
 			property := &StringNode{Value: propertyToken.Value}
 			property.SetLocation(propertyToken.Location)
-
+			property.SetID(uuid.NewString())
 			chainNode, isChain := node.(*ChainNode)
 			optional := postfixToken.Value == "?."
 
@@ -645,6 +665,7 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 				Optional: optional,
 			}
 			memberNode.SetLocation(propertyToken.Location)
+			memberNode.SetID(uuid.NewString())
 
 			if p.current.Is(Bracket, "(") {
 				memberNode.Method = true
@@ -653,6 +674,7 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 					Arguments: p.parseArguments([]Node{}),
 				}
 				node.SetLocation(propertyToken.Location)
+				node.SetID(uuid.NewString())
 			} else {
 				node = memberNode
 			}
@@ -677,6 +699,7 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 					To:   to,
 				}
 				node.SetLocation(postfixToken.Location)
+				node.SetID(uuid.NewString())
 				p.expect(Bracket, "]")
 
 			} else {
@@ -696,6 +719,7 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 						To:   to,
 					}
 					node.SetLocation(postfixToken.Location)
+					node.SetID(uuid.NewString())
 					p.expect(Bracket, "]")
 
 				} else {
@@ -707,6 +731,7 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 						Optional: optional,
 					}
 					node.SetLocation(postfixToken.Location)
+					node.SetID(uuid.NewString())
 					if optional {
 						node = &ChainNode{Node: node}
 					}
@@ -731,6 +756,7 @@ func (p *parser) parseComparison(left Node, token Token, precedence int) Node {
 			Right:    comparator,
 		}
 		cmpNode.SetLocation(token.Location)
+		cmpNode.SetID(uuid.NewString())
 		if rootNode == nil {
 			rootNode = cmpNode
 		} else {
@@ -740,6 +766,7 @@ func (p *parser) parseComparison(left Node, token Token, precedence int) Node {
 				Right:    cmpNode,
 			}
 			rootNode.SetLocation(token.Location)
+			rootNode.SetID(uuid.NewString())
 		}
 
 		left = comparator

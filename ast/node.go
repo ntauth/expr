@@ -14,6 +14,8 @@ var (
 
 // Node represents items of abstract syntax tree.
 type Node interface {
+	ID() string
+	SetID(string)
 	Location() file.Location
 	SetLocation(file.Location)
 	Nature() nature.Nature
@@ -79,7 +81,11 @@ type AnyNode struct {
 }
 
 func NodeToAnyNode(node Node) *AnyNode {
-	anyNode := &AnyNode{}
+	anyNode := &AnyNode{
+		Base: Base{
+			NodeID: node.ID(),
+		},
+	}
 
 	switch node := node.(type) {
 	case *NilNode:
@@ -216,11 +222,18 @@ func AnyNodeToNode(anyNode *AnyNode) (Node, error) {
 		}
 		node = &IdentifierNode{Base: anyNode.Base, Value: value}
 	case AnyNodeTypeInteger:
+		// We need to check both float64 and int because of JSON unmarshaling.
+		valueF, okF := anyNode.Value.(float64)
+		if okF {
+			node = &IntegerNode{Base: anyNode.Base, Value: int(valueF)}
+		}
 		value, ok := anyNode.Value.(int)
-		if !ok {
+		if ok {
+			node = &IntegerNode{Base: anyNode.Base, Value: value}
+		}
+		if node == nil {
 			return nil, fmt.Errorf("invalid integer value: %v", anyNode.Value)
 		}
-		node = &IntegerNode{Base: anyNode.Base, Value: value}
 	case AnyNodeTypeFloat:
 		value, ok := anyNode.Value.(float64)
 		if !ok {
@@ -393,9 +406,20 @@ func Patch(node *Node, newNode Node) {
 
 // Base is a Base struct for all nodes.
 type Base struct {
-	Loc file.Location      `json:"loc"`
-	Nat *nature.NatureBase `json:"nat"`
-	nat nature.Nature
+	NodeID string             `json:"id"`
+	Loc    file.Location      `json:"loc"`
+	Nat    *nature.NatureBase `json:"nat"`
+	nat    nature.Nature
+}
+
+// ID returns the ID of the node.
+func (n Base) ID() string {
+	return n.NodeID
+}
+
+// SetID sets the ID of the node.
+func (n *Base) SetID(id string) {
+	n.NodeID = id
 }
 
 // Location returns the location of the node in the source code.
