@@ -4,12 +4,14 @@ import (
 	"math"
 
 	. "github.com/expr-lang/expr/ast"
+	"github.com/expr-lang/expr/conf"
 	"github.com/expr-lang/expr/file"
 )
 
 type fold struct {
-	applied bool
-	err     *file.Error
+	OptimizationLevel conf.OptimizationLevel
+	applied           bool
+	err               *file.Error
 }
 
 func (fold *fold) Visit(node *Node) {
@@ -259,6 +261,10 @@ func (fold *fold) Visit(node *Node) {
 		}
 
 	case *ArrayNode:
+		if fold.OptimizationLevel < conf.OptimizationLevel2 {
+			break
+		}
+
 		if len(n.Nodes) > 0 {
 			for _, a := range n.Nodes {
 				switch a.(type) {

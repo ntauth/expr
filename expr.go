@@ -122,6 +122,15 @@ func WarnOnAny() Option {
 func Optimize(b bool) Option {
 	return func(c *conf.Config) {
 		c.Optimize = b
+		c.OptimizationLevel = conf.OptimizationLevel2
+	}
+}
+
+// OptimizeLevel sets the optimization level.
+func OptimizeLevel(level conf.OptimizationLevel) Option {
+	return func(c *conf.Config) {
+		c.Optimize = true
+		c.OptimizationLevel = level
 	}
 }
 
