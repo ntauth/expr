@@ -13,7 +13,7 @@ import (
 //export compile
 func compile() int32 {
 	exprInput := pdk.InputString()
-	program, err := expr.Compile(exprInput, expr.Optimize(false))
+	program, err := expr.Compile(exprInput)
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
 		return -1
@@ -56,7 +56,7 @@ func compileTree() int32 {
 		return -1
 	}
 
-	program, err := expr.CompileTree(tree, expr.Optimize(false))
+	program, err := expr.CompileTree(tree)
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
 		return -1
@@ -122,7 +122,6 @@ func patch() int32 {
 			patchNodeID: patchRequest.PatchNodeID,
 			patchNode:   patchTree.Node,
 		}),
-		expr.Optimize(false),
 	)
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
@@ -163,7 +162,7 @@ func run() int32 {
 		return -1
 	}
 
-	program, err := expr.CompileTree(tree, expr.Optimize(false))
+	program, err := expr.CompileTree(tree)
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
 		return -1
