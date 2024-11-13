@@ -11,7 +11,7 @@ import (
 func Optimize(node *Node, config *conf.Config) error {
 	Walk(node, &inArray{})
 	for limit := 1000; limit >= 0; limit-- {
-		fold := &fold{}
+		fold := &fold{OptimizationLevel: config.OptimizationLevel}
 		Walk(node, fold)
 		if fold.err != nil {
 			return fold.err

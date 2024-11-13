@@ -8,6 +8,7 @@ import (
 
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/ast"
+	"github.com/expr-lang/expr/conf"
 	"github.com/expr-lang/expr/internal/testify/require"
 	"github.com/expr-lang/expr/parser"
 	wasm_types "github.com/expr-lang/expr/wasm/types"
@@ -32,6 +33,34 @@ func TestPlugin_Compile(t *testing.T) {
 
 	data := []byte("test || test")
 	_, out, err := plugin.Call("compile", data)
+	require.NoError(t, err)
+
+	response := string(out)
+	fmt.Println(response)
+}
+
+func TestPlugin_Compile_Array(t *testing.T) {
+	manifest := extism.Manifest{
+		Wasm: []extism.Wasm{
+			extism.WasmFile{
+				Path: "../../expr.wasm",
+			},
+		},
+	}
+
+	ctx := context.Background()
+	config := extism.PluginConfig{
+		EnableWasi: true,
+	}
+	plugin, err := extism.NewPlugin(ctx, manifest, config, []extism.HostFunction{})
+	require.NoError(t, err)
+
+	data := []byte("x==1 || y in [1,2,3]")
+	_, out, err := plugin.Call("compile", data)
+	require.NoError(t, err)
+
+	var compileRes wasm_types.CompileResult
+	err = json.Unmarshal(out, &compileRes)
 	require.NoError(t, err)
 
 	response := string(out)
@@ -183,11 +212,17 @@ func (v *patcher) Visit(node *ast.Node) {
 	}
 }
 
+func Test_OptimizationLevel_ArrayFolding(t *testing.T) {
+	program, err := expr.Compile("x==1 || y in [1,2,3]", expr.OptimizeLevel(conf.OptimizationLevel1))
+	require.NoError(t, err)
+	_ = program
+}
+
 func TestPatcher(t *testing.T) {
 	// program, err := expr.Compile("true || (x==1 && y==2) || (z in [1,2,3] && w==4 || (a!=5 && b==6))", expr.Optimize(false))
 	// require.NoError(t, err)
 
-	patchProgram, err := expr.Compile("x==2.3", expr.Optimize(false))
+	patchProgram, err := expr.Compile("x==2.3", expr.OptimizeLevel(conf.OptimizationLevel1))
 	require.NoError(t, err)
 
 	// tree := program.Tree.ToAnyTree()
