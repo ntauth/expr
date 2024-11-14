@@ -123,6 +123,7 @@ func patch() int32 {
 			patchNodeID: patchRequest.PatchNodeID,
 			patchNode:   patchTree.Node,
 		}),
+		expr.OptimizeLevel(conf.OptimizationLevel1),
 	)
 	if err != nil {
 		pdk.Log(pdk.LogError, err.Error())
